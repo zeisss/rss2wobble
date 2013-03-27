@@ -1,4 +1,4 @@
-// Test
+// Tool to fetch RSS feeds and sync them with the Wobble API.
 package main
 
 import (
@@ -16,7 +16,7 @@ import (
   "time"
 )
 
-// == Configuration ==
+// The main configuration file.
 type Configuration struct {
   WobbleConfig WobbleConfig `json:"wobble"`
   Feeds []Feed `json:"feeds"`
@@ -26,6 +26,7 @@ type WobbleConfig struct {
   Username string `json:"username"`
   Password string `json:"password"`
 }
+// The RSS feeds to sync.
 type Feed struct {
   Name *string `json:"name"`
   Url string `json:"url"`
@@ -58,6 +59,7 @@ func main() {
   }
 }
 
+// Load the configuration file.
 func GetConfiguration(filename string) (*Configuration, error) {
   var config Configuration
   var err error
@@ -92,11 +94,10 @@ func GetConfiguration(filename string) (*Configuration, error) {
 // method will create new posts for new entries, update existing ones and
 // delete removed one.
 //
-// (The root post of each topic (id=1) works as a configuration. The user can
-// provide flags to disable certain options.)
+// The root post of each topic (id=1) works as a generic info post.
 func SyncFeed(username string, client *wobble.Client, feed Feed) {
   // Get the topic
-  var topic_id string = hash(feed.Url, username)
+  var topic_id string = Hash(feed.Url, username)
   topic, err := client.GetTopic(topic_id)
   if err != nil {
     // Ok, blind idiotism. If we failed to get the topic, it may just don't exists. So lets try again creating it!
@@ -142,7 +143,7 @@ func SyncFeed(username string, client *wobble.Client, feed Feed) {
   for _, channel_item := range FilterNewItems(topic, channel) {
     time.Sleep(1 * time.Second)
     log.Printf("Creating new post for channel item %v\n", channel_item.GUID)
-    item_post_id := hash(channel.Link, channel_item.GUID)
+    item_post_id := Hash(channel.Link, channel_item.GUID)
 
     _, err := client.CreatePost(topic_id, item_post_id, "1", true)
     if err != nil {
@@ -164,7 +165,7 @@ func SyncFeed(username string, client *wobble.Client, feed Feed) {
   }
 
   for _, item := range channel.Item {
-    item_post_id := hash(channel.Link, item.GUID)
+    item_post_id := Hash(channel.Link, item.GUID)
     content := ComposePostContent(&item)
 
     for _, post := range topic.Posts {
@@ -187,13 +188,6 @@ func SyncFeed(username string, client *wobble.Client, feed Feed) {
       }
     }
   }
-}
-
-func Shorten (text string, max_length uint) string {
-  if uint(len(text)) > max_length {
-    return text[0:max_length] + "..."
-  }
-  return text
 }
 
 func ComposeRootContent(feed Feed, channel *rss.Channel) string {
@@ -225,7 +219,7 @@ func FilterExistingItems(topic *wobble.Topic, channel *rss.Channel) []rss.Item {
   items := make([]rss.Item, 0)
   for _, item := range channel.Item {
     found := false
-    item_post_id := hash(channel.Link, item.GUID)
+    item_post_id := Hash(channel.Link, item.GUID)
 
     for _, post := range topic.Posts {
       if post.PostId == item_post_id {
@@ -245,7 +239,7 @@ func FilterNewItems(topic *wobble.Topic, channel *rss.Channel) []rss.Item {
   items := make([]rss.Item, 0)
   for _, item := range channel.Item {
     found := false
-    item_post_id := hash(channel.Link, item.GUID)
+    item_post_id := Hash(channel.Link, item.GUID)
 
     for _, post := range topic.Posts {
       if post.PostId == item_post_id {
@@ -272,7 +266,7 @@ func FilterOutdatedPosts(topic *wobble.Topic, channel *rss.Channel) []string {
     }
     var found bool = false
     for _, item := range channel.Item {
-      item_post_id := hash(channel.Link, item.GUID)
+      item_post_id := Hash(channel.Link, item.GUID)
       if post.PostId == item_post_id {
         found = true
       }
@@ -286,8 +280,8 @@ func FilterOutdatedPosts(topic *wobble.Topic, channel *rss.Channel) []string {
   return outdated
 }
 
-// Runs a simple hashing over the passed combined keys
-func hash(keys ...string) string {
+// Runs a simple md5 hashing over the passed combined keys
+func Hash(keys ...string) string {
   h := md5.New()
 
   for index, k := range(keys) {
@@ -297,4 +291,13 @@ func hash(keys ...string) string {
     io.WriteString(h, k)
   }
   return fmt.Sprintf("%x", h.Sum(nil))
+}
+
+// Shortens the given string to maximally the number of given characters.
+// If shortened, the string "..." is appended.
+func Shorten (text string, max_length uint) string {
+  if uint(len(text)) > max_length {
+    return text[0:max_length] + "..."
+  }
+  return text
 }
