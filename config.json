@@ -1,0 +1,22 @@
+{
+	"wobble": {
+		"endpoint": "http://wobble.moinz.de/api/endpoint.php",
+		"username": "YourUsername",
+		"password": "YourPassword"
+	},
+	"feeds": [
+	  {"url":"http://ninjalooter.de/feed/", "max-items": 15},
+    {"url":"http://www.questionablecontent.net/QCRSS.xml", "max-items": 5},
+    {"url":"http://powernapcomic.com/rss.xml", "max-items": 100},
+    {"url":"http://www.weregeek.com/feed/", "max-items": 100},
+    {"url":"http://www.exocomics.com/feed", "max-items": 10},
+    {"url":"http://feeds.feedburner.com/KayAndP", "max-items": 15},
+    {"url":"http://www.redmoonrising.org/feed/", "max-items": 100},
+    {"url":"http://xkcd.com/rss.xml", "max-items": 5},
+    {
+      "name": "Plume",
+      "url":"http://plumecomic.com/inc/feed.php?feed=comics",
+      "max-items": 2
+    }
+	]
+}
