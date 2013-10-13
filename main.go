@@ -11,10 +11,20 @@ import (
   "fmt"
   "io"
   "log"
+  "log/syslog"
+//  "net/http"
   "os"
   "text/template"
   "time"
 )
+
+// import _ "net/http/pprof"
+
+/*func init() {
+  go func() {
+  	log.Println(http.ListenAndServe("localhost:6061", nil))
+  }()
+}*/
 
 // The main configuration file.
 type Configuration struct {
@@ -38,7 +48,17 @@ var config *Configuration
 
 func main() {
   config_file := flag.StringP("config", "c", "config.json", "The configuration file.")
+  use_syslog := flag.Bool("syslog", false, "Write to syslog")
   flag.Parse()
+
+  if *use_syslog {
+    w, err := syslog.New(syslog.LOG_INFO, "rss2wobble")
+    if err != nil {
+      log.Fatalf("Failed to connect to syslogger: %v", err)
+    }
+    log.SetFlags(0)
+    log.SetOutput(w)
+  }
 
   config, err = GetConfiguration(*config_file)
   if err != nil {
@@ -69,7 +89,7 @@ func GetConfiguration(filename string) (*Configuration, error) {
     return nil, err
   }
 
-  var data []byte = make([]byte, 1024 * 1024 * 1024) // 1mb
+  var data []byte = make([]byte, 1024 * 1024) // 1mb
   n, err := fp.Read(data)
   if err != nil {
     return nil, err
@@ -107,6 +127,9 @@ func SyncFeed(username string, client *wobble.Client, feed Feed) {
     }
 
     topic, err = client.GetTopic(topic_id)
+    if err != nil {
+      panic(err)
+    }
   }
 
   // Get the channel
